@@ -17,14 +17,17 @@ services:
     build:
       context: ./backend
     restart: always
+    working_dir: /app
     env_file:
       - .env
     environment:
       # fallback values if .env not present
       DATABASE_URL: postgresql://postgres:postgres@db:5432/attendance
       FACE_SERVICE_URL: http://face-recognition-api:8001/verify
+      PYTHONPATH: /app
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - "8080:8000"
 
@@ -38,11 +41,14 @@ services:
   db-seed:
     build:
       context: ./backend
-    command: python -m backend.seed_db
+    working_dir: /app
+    command: sh -c "PYTHONPATH=/app python -m backend.seed_db"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/attendance
+      PYTHONPATH: /app
 
 volumes:
   db_data:
