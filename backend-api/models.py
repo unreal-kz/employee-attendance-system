@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, TIMESTAMP, Boolean, ForeignKey, LargeBinary
 from sqlalchemy.dialects.postgresql import JSONB
-from .database import Base
+from database import Base
 
 class Employee(Base):
     __tablename__ = 'employees'
