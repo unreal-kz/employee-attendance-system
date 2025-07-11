@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: attendance
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  backend-api:
+    build:
+      context: ./backend
+    restart: always
+    env_file:
+      - .env
+    environment:
+      # fallback values if .env not present
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/attendance
+      FACE_SERVICE_URL: http://face-recognition-api:8001/verify
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
+  face-recognition-api:
+    build:
+      context: ./face-recognition-api
+    restart: always
+    ports:
+      - "8001:8001"
+
+volumes:
+  db_data:
