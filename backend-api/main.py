@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
-from . import models, schemas, utils
-from .database import SessionLocal, engine
+import models, schemas, utils
+from database import SessionLocal, engine
 from datetime import datetime, date
 from typing import List, Optional
 
