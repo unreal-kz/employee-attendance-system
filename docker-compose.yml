@@ -35,5 +35,14 @@ services:
     ports:
       - "8081:8001"
 
+  db-seed:
+    build:
+      context: ./backend
+    command: python -m backend.seed_db
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/attendance
+
 volumes:
   db_data:
