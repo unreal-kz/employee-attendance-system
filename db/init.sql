@@ -27,6 +27,34 @@ CREATE TABLE attendance (
 CREATE INDEX idx_attendance_employee_id ON attendance(employee_id);
 CREATE INDEX idx_attendance_check_in_time ON attendance(check_in_time);
 
+-- --- User Authentication Tables ---
+
+-- Roles for users
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL
+);
+
+INSERT INTO roles (name) VALUES ('admin'), ('manager'), ('employee');
+
+-- Users table
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role_id INTEGER NOT NULL REFERENCES roles(id),
+    employee_id INTEGER UNIQUE REFERENCES employees(id), -- Optional link to an employee
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Index for users table
+CREATE INDEX idx_users_username ON users(username);
+
+-- Insert a default admin user
+-- The password is 'admin'
+INSERT INTO users (username, password_hash, role_id) VALUES
+('admin', '$2b$10$K.Ad5A9iAU2Ld0p4m13fSOStG32U5F7i9.ia7.a.9.2oK9.w5DO.q', (SELECT id FROM roles WHERE name = 'admin'));
 
 -- Populate the database with some mock data
 INSERT INTO employees (name, email, department) VALUES

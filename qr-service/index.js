@@ -98,76 +98,76 @@ app.get('/qr', async (req, res) => {
         }
       });
 
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Employee QR Code - ${employee.name}</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-                body { 
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-                  display: flex; 
-                  justify-content: center; 
-                  align-items: center; 
-                  height: 100vh; 
-                  margin: 0; 
-                  flex-direction: column; 
-                  background-color: #f5f5f5;
-                  padding: 20px;
-                  box-sizing: border-box;
-                }
-                .container {
-                  background: white;
-                  padding: 30px;
-                  border-radius: 10px;
-                  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                  text-align: center;
-                  max-width: 400px;
-                  width: 100%;
-                }
-                h2 { 
-                  margin-bottom: 10px; 
-                  color: #333;
-                  font-size: 24px;
-                }
-                .employee-name {
-                  color: #666;
-                  margin-bottom: 20px;
-                  font-size: 16px;
-                }
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>Employee QR Code - ${employee.name}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                display: flex; 
+                justify-content: center; 
+                align-items: center; 
+                height: 100vh; 
+                margin: 0; 
+                flex-direction: column; 
+                background-color: #f5f5f5;
+                padding: 20px;
+                box-sizing: border-box;
+              }
+              .container {
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                text-align: center;
+                max-width: 400px;
+                width: 100%;
+              }
+              h2 { 
+                margin-bottom: 10px; 
+                color: #333;
+                font-size: 24px;
+              }
+              .employee-name {
+                color: #666;
+                margin-bottom: 20px;
+                font-size: 16px;
+              }
                 .qr-code {
-                  margin: 20px 0;
-                }
+                margin: 20px 0;
+              }
                 .qr-code img {
                   border: 2px solid #eee;
                   border-radius: 8px;
                   padding: 10px;
                   background: white;
                 }
-                .footer {
-                  margin-top: 20px;
-                  font-size: 12px;
-                  color: #999;
-                }
+              .footer {
+                margin-top: 20px;
+                font-size: 12px;
+                color: #999;
+              }
                 .token-info {
                   margin-top: 15px;
                   font-size: 10px;
                   color: #ccc;
                   word-break: break-all;
                 }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h2>Attendance QR Code</h2>
-                <div class="employee-name">${employee.name}</div>
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <h2>Attendance QR Code</h2>
+              <div class="employee-name">${employee.name}</div>
                 <div class="qr-code">
                     <img src="${qrCodeDataURL}" alt="QR Code for ${employee.name}" />
                 </div>
-                <div class="footer">Scan this code for attendance</div>
+              <div class="footer">Scan this code for attendance</div>
                 <div class="token-info">Token: ${token}</div>
-            </div>
+          </div>
         </body>
         </html>
       `);
@@ -205,9 +205,9 @@ app.get('/qr', async (req, res) => {
                 <p>Unable to generate QR code for ${employee.name}</p>
                 <p style="font-size: 12px; color: #666;">Error: ${qrError.message}</p>
             </div>
-        </body>
-        </html>
-      `);
+      </body>
+      </html>
+    `);
     }
   } catch (err) {
     console.error('QR generation error:', err);
