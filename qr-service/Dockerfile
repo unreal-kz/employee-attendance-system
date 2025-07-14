@@ -5,13 +5,16 @@ FROM node:18-alpine
 WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json (if available)
-COPY package*.json ./
+COPY qr-service/package*.json ./
 
 # Install app dependencies
 RUN npm install
 
 # Copy app source code
-COPY . .
+COPY qr-service/ .
+
+# Copy frontend files
+COPY frontend/ ./frontend/
 
 # Expose the port the app runs on
 EXPOSE 3000

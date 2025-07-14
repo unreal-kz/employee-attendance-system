@@ -3,22 +3,21 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const { body, param, validationResult } = require('express-validator');
+const QRCode = require('qrcode');
+const path = require('path');
 const db = require('./db');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:"],
-    },
-  },
-}));
+// Basic security headers without HSTS for HTTP development
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:");
+  next();
+});
 
 // CORS configuration
 app.use(cors({
@@ -37,6 +36,14 @@ app.use(limiter);
 // Body parsing with size limits
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static files from frontend directory
+app.use(express.static(path.join(__dirname, 'frontend')));
+
+// Serve frontend app for root route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend/index.html'));
+});
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -80,83 +87,128 @@ app.get('/qr', async (req, res) => {
 
     const employee = rows[0];
 
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-          <title>Employee QR Code - ${employee.name}</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-              body { 
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-                display: flex; 
-                justify-content: center; 
-                align-items: center; 
-                height: 100vh; 
-                margin: 0; 
-                flex-direction: column; 
-                background-color: #f5f5f5;
-                padding: 20px;
-                box-sizing: border-box;
-              }
-              .container {
-                background: white;
-                padding: 30px;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                text-align: center;
-                max-width: 400px;
-                width: 100%;
-              }
-              h2 { 
-                margin-bottom: 10px; 
-                color: #333;
-                font-size: 24px;
-              }
-              .employee-name {
-                color: #666;
-                margin-bottom: 20px;
-                font-size: 16px;
-              }
-              #qrcode {
-                margin: 20px 0;
-              }
-              .footer {
-                margin-top: 20px;
-                font-size: 12px;
-                color: #999;
-              }
-          </style>
-      </head>
-      <body>
-          <div class="container">
-              <h2>Attendance QR Code</h2>
-              <div class="employee-name">${employee.name}</div>
-              <canvas id="qrcode"></canvas>
-              <div class="footer">Scan this code for attendance</div>
-          </div>
-          <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-          <script>
-              const token = "${token}";
-              if (token) {
-                  QRCode.toCanvas(document.getElementById('qrcode'), token, { 
-                    width: 256, 
-                    errorCorrectionLevel: 'H',
-                    color: {
-                      dark: '#000000',
-                      light: '#FFFFFF'
-                    }
-                  }, function (error) {
-                      if (error) {
-                        console.error(error);
-                        document.getElementById('qrcode').innerHTML = '<p>Error generating QR code</p>';
-                      }
-                  });
-              }
-          </script>
-      </body>
-      </html>
-    `);
+    // Generate QR code on server-side
+    try {
+      const qrCodeDataURL = await QRCode.toDataURL(token, {
+        width: 256,
+        errorCorrectionLevel: 'H',
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Employee QR Code - ${employee.name}</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body { 
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                  display: flex; 
+                  justify-content: center; 
+                  align-items: center; 
+                  height: 100vh; 
+                  margin: 0; 
+                  flex-direction: column; 
+                  background-color: #f5f5f5;
+                  padding: 20px;
+                  box-sizing: border-box;
+                }
+                .container {
+                  background: white;
+                  padding: 30px;
+                  border-radius: 10px;
+                  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                  text-align: center;
+                  max-width: 400px;
+                  width: 100%;
+                }
+                h2 { 
+                  margin-bottom: 10px; 
+                  color: #333;
+                  font-size: 24px;
+                }
+                .employee-name {
+                  color: #666;
+                  margin-bottom: 20px;
+                  font-size: 16px;
+                }
+                .qr-code {
+                  margin: 20px 0;
+                }
+                .qr-code img {
+                  border: 2px solid #eee;
+                  border-radius: 8px;
+                  padding: 10px;
+                  background: white;
+                }
+                .footer {
+                  margin-top: 20px;
+                  font-size: 12px;
+                  color: #999;
+                }
+                .token-info {
+                  margin-top: 15px;
+                  font-size: 10px;
+                  color: #ccc;
+                  word-break: break-all;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>Attendance QR Code</h2>
+                <div class="employee-name">${employee.name}</div>
+                <div class="qr-code">
+                    <img src="${qrCodeDataURL}" alt="QR Code for ${employee.name}" />
+                </div>
+                <div class="footer">Scan this code for attendance</div>
+                <div class="token-info">Token: ${token}</div>
+            </div>
+        </body>
+        </html>
+      `);
+    } catch (qrError) {
+      console.error('Server-side QR generation error:', qrError);
+      res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>QR Code Error</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body { 
+                  font-family: Arial, sans-serif; 
+                  display: flex; 
+                  justify-content: center; 
+                  align-items: center; 
+                  height: 100vh; 
+                  margin: 0; 
+                  background-color: #f5f5f5;
+                }
+                .error-container {
+                  background: white;
+                  padding: 30px;
+                  border-radius: 10px;
+                  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                  text-align: center;
+                  max-width: 400px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="error-container">
+                <h2 style="color: red;">QR Code Generation Error</h2>
+                <p>Unable to generate QR code for ${employee.name}</p>
+                <p style="font-size: 12px; color: #666;">Error: ${qrError.message}</p>
+            </div>
+        </body>
+        </html>
+      `);
+    }
   } catch (err) {
     console.error('QR generation error:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -311,6 +363,156 @@ app.get('/employees/:id/qr-token',
     }
 );
 
+// --- Attendance Routes ---
+
+// Check-in an employee
+app.post('/attendance/check-in', [
+    body('token').isUUID().withMessage('A valid QR token is required'),
+], handleValidationErrors, async (req, res) => {
+    try {
+        const { token } = req.body;
+
+        // 1. Find the employee by QR token
+        const employeeResult = await db.query('SELECT id FROM employees WHERE qr_token = $1 AND status = $2', [token, 'active']);
+        if (employeeResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Employee not found or is inactive' });
+        }
+        const employeeId = employeeResult.rows[0].id;
+
+        // 2. Check if the employee is already checked in
+        const lastAttendance = await db.query(
+            'SELECT status FROM attendance WHERE employee_id = $1 ORDER BY check_in_time DESC LIMIT 1',
+            [employeeId]
+        );
+
+        if (lastAttendance.rows.length > 0 && lastAttendance.rows[0].status === 'checked-in') {
+            return res.status(409).json({ error: 'Employee is already checked in' });
+        }
+
+        // 3. Create a new check-in record
+        const { rows } = await db.query(
+            'INSERT INTO attendance (employee_id, status) VALUES ($1, $2) RETURNING *',
+            [employeeId, 'checked-in']
+        );
+
+        res.status(201).json({ message: 'Check-in successful', attendance: rows[0] });
+
+    } catch (err) {
+        console.error('Check-in error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Check-out an employee
+app.post('/attendance/check-out', [
+    body('token').isUUID().withMessage('A valid QR token is required'),
+    body('notes').optional().isString().trim(),
+], handleValidationErrors, async (req, res) => {
+    try {
+        const { token, notes } = req.body;
+
+        // 1. Find the employee by QR token
+        const employeeResult = await db.query('SELECT id FROM employees WHERE qr_token = $1 AND status = $2', [token, 'active']);
+        if (employeeResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Employee not found or is inactive' });
+        }
+        const employeeId = employeeResult.rows[0].id;
+
+        // 2. Find the last open check-in record for this employee
+        const lastAttendanceResult = await db.query(
+            'SELECT id, status FROM attendance WHERE employee_id = $1 AND status = $2 ORDER BY check_in_time DESC LIMIT 1',
+            [employeeId, 'checked-in']
+        );
+
+        if (lastAttendanceResult.rows.length === 0) {
+            return res.status(404).json({ error: 'No active check-in found for this employee' });
+        }
+        const attendanceId = lastAttendanceResult.rows[0].id;
+
+        // 3. Update the record to check-out
+        const { rows } = await db.query(
+            'UPDATE attendance SET check_out_time = CURRENT_TIMESTAMP, status = $1, notes = $2 WHERE id = $3 RETURNING *',
+            ['checked-out', notes || null, attendanceId]
+        );
+
+        res.status(200).json({ message: 'Check-out successful', attendance: rows[0] });
+
+    } catch (err) {
+        console.error('Check-out error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get attendance history for a specific employee
+app.get('/employees/:id/attendance', [
+    param('id').isInt().withMessage('Employee ID must be a valid integer'),
+], handleValidationErrors, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 25;
+        const offset = (page - 1) * limit;
+
+        const countResult = await db.query('SELECT COUNT(*) FROM attendance WHERE employee_id = $1', [id]);
+        const total = parseInt(countResult.rows[0].count);
+
+        const { rows } = await db.query(
+            'SELECT * FROM attendance WHERE employee_id = $1 ORDER BY check_in_time DESC LIMIT $2 OFFSET $3',
+            [id, limit, offset]
+        );
+        
+        res.json({
+            attendance: rows,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (err) {
+        console.error('Get employee attendance error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get all attendance records (admin view)
+app.get('/attendance', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 25;
+        const offset = (page - 1) * limit;
+
+        const countResult = await db.query('SELECT COUNT(*) FROM attendance');
+        const total = parseInt(countResult.rows[0].count);
+
+        const { rows } = await db.query(
+            `SELECT 
+                a.id, a.employee_id, e.name as employee_name, e.email as employee_email, 
+                a.check_in_time, a.check_out_time, a.status, a.notes
+             FROM attendance a
+             JOIN employees e ON a.employee_id = e.id
+             ORDER BY a.check_in_time DESC 
+             LIMIT $1 OFFSET $2`,
+            [limit, offset]
+        );
+        
+        res.json({
+            attendance: rows,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (err) {
+        console.error('Get all attendance error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
 // 404 handler
 app.use('*', (req, res) => {
     res.status(404).json({ error: 'Route not found' });
@@ -322,8 +524,9 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal server error' });
 });
 
-const server = app.listen(port, () => {
-    console.log(`QR code service listening at http://localhost:${port}`);
+const server = app.listen(port, '0.0.0.0', () => {
+    console.log(`QR code service listening at http://0.0.0.0:${port}`);
+    console.log(`External access: http://185.32.84.81:${port}`);
 });
 
 // Graceful shutdown
