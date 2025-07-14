@@ -54,7 +54,7 @@ CREATE INDEX idx_users_username ON users(username);
 -- Insert a default admin user
 -- The password is 'admin'
 INSERT INTO users (username, password_hash, role_id) VALUES
-('admin', '$2b$10$K.Ad5A9iAU2Ld0p4m13fSOStG32U5F7i9.ia7.a.9.2oK9.w5DO.q', (SELECT id FROM roles WHERE name = 'admin'));
+('admin', '$2b$10$afc04oH5IdmPe1XvICAs3ueyq/HQG5.v3ISuLh1KQ3sx3UICKELkC', (SELECT id FROM roles WHERE name = 'admin'));
 
 -- Populate the database with some mock data
 INSERT INTO employees (name, email, department) VALUES
