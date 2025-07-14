@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Attendance System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-users"></i> Employee Attendance System</h1>
+                <p>Manage employees and generate QR codes for attendance tracking</p>
+            </div>
+            <div id="authContainer" class="auth-container">
+                <button id="loginBtn" class="nav-btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+                <div id="userInfo" class="user-info" style="display: none;">
+                    <span id="usernameDisplay"></span>
+                    <button id="logoutBtn" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav" style="display: none;">
+            <button class="nav-btn active" data-tab="employees">
+                <i class="fas fa-users"></i> Employees
+            </button>
+            <button class="nav-btn" data-tab="add-employee">
+                <i class="fas fa-user-plus"></i> Add Employee
+            </button>
+            <button class="nav-btn" data-tab="qr-codes">
+                <i class="fas fa-qrcode"></i> QR Codes
+            </button>
+            <button class="nav-btn" data-tab="dashboard">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </button>
+        </nav>
+
+        <!-- Login Form -->
+        <div id="loginView" class="login-view">
+            <div class="login-box">
+                <h2><i class="fas fa-lock"></i> Admin Login</h2>
+                <form id="loginForm" class="form">
+                    <div class="form-group">
+                        <label for="username"><i class="fas fa-user-shield"></i> Username</label>
+                        <input type="text" id="username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password"><i class="fas fa-key"></i> Password</label>
+                        <input type="password" id="password" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-sign-in-alt"></i> Login</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main" style="display: none;">
+            <!-- Employees Tab -->
+            <div id="employees" class="tab-content active">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> All Employees</h2>
+                    <button class="btn btn-primary" onclick="loadEmployees()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search employees...">
+                    <i class="fas fa-search"></i>
+                </div>
+
+                <div id="employeesGrid" class="employees-grid">
+                    <!-- Employee cards will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Add Employee Tab -->
+            <div id="add-employee" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-plus"></i> Add New Employee</h2>
+                </div>
+                
+                <form id="addEmployeeForm" class="form">
+                    <div class="form-group">
+                        <label for="employeeName">
+                            <i class="fas fa-user"></i> Full Name
+                        </label>
+                        <input type="text" id="employeeName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="employeeEmail">
+                            <i class="fas fa-envelope"></i> Email Address
+                        </label>
+                        <input type="email" id="employeeEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="employeeDepartment">
+                            <i class="fas fa-building"></i> Department
+                        </label>
+                        <select id="employeeDepartment" required>
+                            <option value="">Select Department</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Human Resources">Human Resources</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Operations">Operations</option>
+                            <option value="IT">IT</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Employee
+                    </button>
+                </form>
+            </div>
+
+            <!-- QR Codes Tab -->
+            <div id="qr-codes" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-qrcode"></i> QR Code Gallery</h2>
+                    <button class="btn btn-primary" onclick="loadQRCodes()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                
+                <div id="qrCodesGrid" class="qr-codes-grid">
+                    <!-- QR codes will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> Attendance Dashboard</h2>
+                    <button class="btn btn-primary" onclick="loadDashboardData()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                
+                <div id="dashboardContent">
+                    <!-- Dashboard content will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="messageContainer" class="message-container"></div>
+
+    <!-- Edit Employee Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit Employee</h3>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editEmployeeForm" class="form">
+                <input type="hidden" id="editEmployeeId">
+                
+                <div class="form-group">
+                    <label for="editEmployeeName">
+                        <i class="fas fa-user"></i> Full Name
+                    </label>
+                    <input type="text" id="editEmployeeName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editEmployeeEmail">
+                        <i class="fas fa-envelope"></i> Email Address
+                    </label>
+                    <input type="email" id="editEmployeeEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editEmployeeDepartment">
+                        <i class="fas fa-building"></i> Department
+                    </label>
+                    <select id="editEmployeeDepartment" required>
+                        <option value="">Select Department</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Human Resources">Human Resources</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Operations">Operations</option>
+                        <option value="IT">IT</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
