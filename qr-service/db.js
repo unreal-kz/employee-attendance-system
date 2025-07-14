@@ -15,9 +15,9 @@ const pool = new Pool({
   database: process.env.POSTGRES_DB,
   password: process.env.POSTGRES_PASSWORD,
   port: process.env.DB_PORT || 5432,
-  max: 10, // Maximum number of connections
-  idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
-  connectionTimeoutMillis: 2000, // Return error after 2 seconds if connection could not be established
+  max: parseInt(process.env.DB_MAX_CONNECTIONS) || 10, // Maximum number of connections
+  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT) || 30000, // Close idle connections after specified time
+  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 2000, // Return error after specified time if connection could not be established
 });
 
 // Test database connection on startup
@@ -27,6 +27,7 @@ pool.connect((err, client, release) => {
     process.exit(1);
   }
   console.log('Database connected successfully');
+  console.log(`Pool configuration: max=${pool.options.max}, idleTimeout=${pool.options.idleTimeoutMillis}ms, connectionTimeout=${pool.options.connectionTimeoutMillis}ms`);
   release();
 });
 
