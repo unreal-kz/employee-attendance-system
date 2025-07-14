@@ -2,7 +2,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const { body, param, validationResult } = require('express-validator');
+const { body, param, query, validationResult } = require('express-validator');
 const QRCode = require('qrcode');
 const path = require('path');
 const db = require('./db');
@@ -512,6 +512,109 @@ apiRouter.get('/attendance', authenticateToken, authorizeRole('admin'), async (r
     } catch (err) {
         console.error('Get all attendance error:', err);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// QR Code generation endpoint - this was missing!
+apiRouter.get('/qr', [
+    query('token').isUUID().withMessage('A valid QR token is required.')
+], handleValidationErrors, async (req, res) => {
+    try {
+        const { token } = req.query;
+        
+        // Verify the token exists in the database
+        const { rows } = await db.query(
+            'SELECT id, name, email, department FROM employees WHERE qr_token = $1 AND status = $2',
+            [token, 'active']
+        );
+        
+        if (rows.length === 0) {
+            return res.status(404).send(`
+                <html>
+                    <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                        <h2>❌ QR Code Not Found</h2>
+                        <p>This QR code is invalid or the employee is inactive.</p>
+                    </body>
+                </html>
+            `);
+        }
+        
+        const employee = rows[0];
+        
+        // Generate QR code containing the token
+        const qrDataUrl = await QRCode.toDataURL(token, {
+            width: 200,
+            margin: 2,
+            color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+            }
+        });
+        
+        // Return HTML page with QR code
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>QR Code - ${employee.name}</title>
+                <meta charset="utf-8">
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        padding: 20px;
+                        background: #f8fafc;
+                    }
+                    .qr-container {
+                        background: white;
+                        border-radius: 12px;
+                        padding: 30px;
+                        max-width: 400px;
+                        margin: 0 auto;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    }
+                    .employee-info {
+                        margin-bottom: 20px;
+                        color: #2d3748;
+                    }
+                    .qr-code {
+                        margin: 20px 0;
+                    }
+                    .instructions {
+                        color: #718096;
+                        font-size: 14px;
+                        margin-top: 20px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="qr-container">
+                    <div class="employee-info">
+                        <h2>${employee.name}</h2>
+                        <p><strong>Department:</strong> ${employee.department}</p>
+                        <p><strong>Email:</strong> ${employee.email}</p>
+                    </div>
+                    <div class="qr-code">
+                        <img src="${qrDataUrl}" alt="QR Code for ${employee.name}" />
+                    </div>
+                    <div class="instructions">
+                        <p>📱 Scan this QR code with the mobile app to track attendance</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `);
+        
+    } catch (err) {
+        console.error('QR generation error:', err);
+        res.status(500).send(`
+            <html>
+                <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                    <h2>❌ Error</h2>
+                    <p>Failed to generate QR code. Please try again.</p>
+                </body>
+            </html>
+        `);
     }
 });
 
